@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>rag-system Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'default'});</script>
+</head><body>
+<h2>rag-system — Architecture Diagram</h2>
+<p>Right-click the diagram below → Save Image As → save to assets/architecture.png</p>
+<div class="mermaid">
+graph TB
+    subgraph UI["🖥️ 交互层"]
+        FastAPI["FastAPI 后端"]
+        Streamlit["Streamlit 演示面板"]
+    end
+
+    subgraph Indexing["📥 索引管线"]
+        Loader["Document Loader<br/>PDF + Markdown"]
+        Cleaner["Text Cleaner<br/>去噪 + 规范化"]
+        Chunker["Parent-Child Chunker<br/>大块上下文 + 小块检索"]
+        Embedder["BGE Embedder<br/>bge-small-zh"]
+        FAISS["FAISS Vector Store<br/>IndexFlatIP"]
+        BM25["BM25 Index<br/>jieba + rank_bm25"]
+    end
+
+    subgraph Query["📤 查询管线"]
+        Rewriter["Query Rewriter<br/>LLM 三视角改写"]
+        Hybrid["Hybrid Retriever<br/>BM25 + Vector RRF 融合"]
+        Reranker["bge-reranker<br/>Cross-Encoder 精排"]
+        Generator["LLM Generator<br/>答案生成 + 溯源"]
+    end
+
+    subgraph Memory["🧠 记忆层"]
+        ShortTerm["Sliding Window<br/>短期 3 轮"]
+        LongTerm["Vector Memory<br/>长期语义检索"]
+    end
+
+    Loader --> Cleaner --> Chunker
+    Chunker --> Embedder
+    Embedder --> FAISS
+    Embedder --> BM25
+
+    Rewriter --> Hybrid
+    Hybrid --> FAISS
+    Hybrid --> BM25
+    Hybrid --> Reranker --> Generator
+
+    Generator --> ShortTerm
+    ShortTerm --> LongTerm
+
+    Streamlit --> FastAPI
+    FastAPI --> Indexing
+    FastAPI --> Query
+
+    style Loader fill:#4a90d9,color:#fff
+    style Chunker fill:#34a853,color:#fff
+    style Hybrid fill:#f5a623,color:#fff
+    style Reranker fill:#9b59b6,color:#fff
+    style Generator fill:#e74c3c,color:#fff
+
+</div>
+</body></html>
