@@ -288,10 +288,18 @@ class Evaluator:
             print(f"  [{i+1}/{len(test_set)}] {question[:60]}...", end=" ")
 
             try:
+                # ask() 的分块参数名是 enable_parent_child，而消融开关传的是
+                # use_parent_child，直接透传会 TypeError。这里做一次参数名映射。
+                ask_kwargs = {
+                    k: v for k, v in config_kwargs.items() if k != "use_parent_child"
+                }
+                ask_kwargs["enable_parent_child"] = config_kwargs.get(
+                    "use_parent_child", True,
+                )
                 result = await qp.ask(
                     query=question,
                     session_id=f"eval_{i}",
-                    **config_kwargs,
+                    **ask_kwargs,
                 )
 
                 # 检索指标
